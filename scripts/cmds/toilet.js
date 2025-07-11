@@ -6,7 +6,7 @@ const fs = require("fs")
 module.exports = {
  config: {
  name: "toilet",
- aliases: ["toilet"],
+ aliases: ["chi"],
  version: "1.0",
  author: "Upen Basnet",
  countDown: 5,
@@ -21,13 +21,13 @@ module.exports = {
 
  onStart: async function ({ message, event, args }) {
  const mention = Object.keys(event.mentions);
- if (mention.length == 0) return message.reply("Please mention someone");
+ if (mention.length == 0) return message.reply("𝐏𝐥𝐞𝐚𝐬𝐞 𝐦𝐞𝐧𝐭𝐢𝐨𝐧 𝐬𝐨𝐦𝐞𝐨𝐧𝐞");
  else if (mention.length == 1) {
  const one = event.senderID, two = mention[0];
- bal(one, two).then(ptth => { message.reply({ body: "You Deserve This Place🤣", attachment: fs.createReadStream(ptth) }) })
+ bal(one, two).then(ptth => { message.reply({ body: "𝐘𝐨𝐮 𝐝𝐞𝐬𝐞𝐫𝐯𝐞 𝐭𝐡𝐢𝐬 𝐩𝐥𝐚𝐜𝐞 💩", attachment: fs.createReadStream(ptth) }) })
  } else {
  const one = mention[1], two = mention[0];
- bal(one, two).then(ptth => { message.reply({ body: "You Deserve This Place🤣", attachment: fs.createReadStream(ptth) }) })
+ bal(one, two).then(ptth => { message.reply({ body: "𝐘𝐨𝐮 𝐝𝐞𝐬𝐞𝐫𝐯𝐞 𝐭𝐡𝐢𝐬 𝐩𝐥𝐚𝐜𝐞 💩", attachment: fs.createReadStream(ptth) }) })
  }
  }
 

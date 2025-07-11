@@ -1,109 +1,118 @@
-const os = require("os");
+const axios = require("axios");
 const fs = require("fs-extra");
-
-const startTime = new Date(); // Moved outside onStart
+const path = require("path");
 
 module.exports = {
-  config: {
-    name: "uptime",
-    aliases: ["up", "upt"],
-    author: "ArYAN",
-    countDown: 0,
-    role: 0,
-    category: "system",
-    longDescription: {
-      en: "Get System Information",
-    },
-  },
-  
-  onStart: async function ({ api, event, args, threadsData, usersData }) {
-    try {
-      const uptimeInSeconds = (new Date() - startTime) / 1000;
+  config: {
+    name: "uptime",
+    aliases: ["up", " upt"],
+    version: "1.5",
+    author: "EREN // Re-coded",
+    role: 0,
+    shortDescription: { 
+      en: "Check bot's uptime & ping with style!" 
+    },
+    longDescription: { 
+      en: "Shows how long the bot has been running & its response time in a cute format!" 
+    },
+    category: "owner",
+    guide: { 
+      en: "Use {p}monitor to check bot stats in a stylish way!" 
+    },
+    onChat: true
+  },
 
-      const seconds = uptimeInSeconds;
-      const days = Math.floor(seconds / (3600 * 24));
-      const hours = Math.floor((seconds % (3600 * 24)) / 3600);
-      const minutes = Math.floor((seconds % 3600) / 60);
-      const secondsLeft = Math.floor(seconds % 60);
-      const uptimeFormatted = `${days}d ${hours}h ${minutes}m ${secondsLeft}s`;
+  onStart: async function ({ api, event }) {
+    return this.monitor(api, event);
+  },
 
-      const loadAverage = os.loadavg();
-      const cpuUsage =
-        os
-          .cpus()
-          .map((cpu) => cpu.times.user)
-          .reduce((acc, curr) => acc + curr) / os.cpus().length;
+  onChat: async function ({ event, api }) {
+    const content = event.body?.toLowerCase().trim();
+    if (["upt", "up"].includes(content)) {
+      return this.monitor(api, event);
+    }
+  },
 
-      const totalMemoryGB = os.totalmem() / 1024 ** 3;
-      const freeMemoryGB = os.freemem() / 1024 ** 3;
-      const usedMemoryGB = totalMemoryGB - freeMemoryGB;
+  monitor: async function (api, event) {
+    try {
+      const start = Date.now();
+      const temp = await api.sendMessage("⌛ 𝖥𝖾𝗍𝖼𝗁𝗂𝗇𝗀 𝖻𝗈𝗍 𝗌𝗍𝖺𝗍𝗎𝗌...", event.threadID);
+      setTimeout(() => api.unsendMessage(temp.messageID), 1500);
 
-      const allUsers = await usersData.getAll();
-      const allThreads = await threadsData.getAll();
-      const currentDate = new Date();
-      const options = { year: "numeric", month: "numeric", day: "numeric" };
-      const date = currentDate.toLocaleDateString("en-US", options);
-      const time = currentDate.toLocaleTimeString("en-US", {
-        timeZone: "Asia/Kolkata",
-        hour12: true,
-      });
+      const end = Date.now();
+      const ping = end - start;
 
-      const timeStart = Date.now();
-      await api.sendMessage({
-        body: "🔎| checking........",
-      }, event.threadID);
+      const uptime = process.uptime();
+      const days = Math.floor(uptime / 86400);
+      const hours = Math.floor((uptime % 86400) / 3600);
+      const minutes = Math.floor((uptime % 3600) / 60);
+      const seconds = Math.floor(uptime % 60);
 
-      const ping = Date.now() - timeStart;
+      let uptimeFormatted = `⏳ ${days}d ${hours}h ${minutes}m ${seconds}s`;
+      if (days === 0) uptimeFormatted = `⏳ ${hours}h ${minutes}m ${seconds}s`;
+      if (hours === 0) uptimeFormatted = `⏳ ${minutes}m ${seconds}s`;
+      if (minutes === 0) uptimeFormatted = `⏳ ${seconds}s`;
 
-      let pingStatus = "⛔| 𝖡𝖺𝖽 𝖲𝗒𝗌𝗍𝖾𝗆";
-      if (ping < 1000) {
-        pingStatus = "✅| 𝖲𝗆𝗈𝗈𝗍𝗁 𝖲𝗒𝗌𝗍𝖾𝗆";
-      }
-      const systemInfo = `♡   ∩_∩
- （„• ֊ •„)♡
-╭─∪∪────────────⟡
-│ 𝗨𝗣𝗧𝗜𝗠𝗘 𝗜𝗡𝗙𝗢
-├───────────────⟡
-│ ⏰ 𝗥𝗨𝗡𝗧𝗜𝗠𝗘
-│  ${uptimeFormatted}
-├───────────────⟡
-│ ✅ 𝗢𝗧𝗛𝗘𝗥 𝗜𝗡𝗙𝗢
-│𝙳𝙰𝚃𝙴: ${date}
-│𝚃𝙸𝙼𝙴: ${time}
-│𝚄𝚂𝙴𝚁𝚂: ${allUsers.length}
-│𝚃𝙷𝚁𝙴𝙰𝙳𝚂: ${allThreads.length}
-│𝙿𝙸𝙽𝙶: ${ping}𝚖𝚜
-│𝚂𝚃𝙰𝚃𝚄𝚂: ${pingStatus}
-├───────────────⟡
-│ 🙂 𝗢𝗪𝗡𝗘𝗥 
-│𝙽𝚊𝚖𝚎 : 𝐓𝐎𝐌 𝐁𝐁𝐘 🎀 
-│|𝚂𝙸𝙽𝙶𝙻𝙴 𝚄𝙻𝚃𝚁𝙰 𝙿𝚁𝙾 𝙼𝙰𝚇
-╰───────────────⟡
+      const imageURL = "https://i.imgur.com/TfizXoz.jpeg";
+      const fallbackImage = path.join(__dirname, "fallback.jpg"); // Optional local backup
+
+      const getImageStream = async () => {
+        try {
+          const res = await axios.get(imageURL, {
+            responseType: "stream",
+            headers: { "User-Agent": "Mozilla/5.0" }
+          });
+          return res.data;
+        } catch (err) {
+          if (err.response?.status === 429) {
+            console.warn("429 detected, using fallback image.");
+          } else {
+            console.warn("Image fetch error:", err.message);
+          }
+          if (fs.existsSync(fallbackImage)) {
+            return fs.createReadStream(fallbackImage);
+          } else {
+            return null; // no image
+          }
+        }
+      };
+
+      const finalMessage = `
+╭───────────────────────╮
+𝗕𝗢𝗧 𝗦𝗧𝗔𝗧𝗨𝗦
+──────╯
+╰─────────────────
+
+┏━━━━━━━━━━━━━━━┓
+┃ 💤 𝐔𝐩𝐭: ${uptimeFormatted}
+┃ ⚡ 𝐏𝐢𝐧𝐠: ${ping}𝐌𝐬
+┃ 👑 𝐎𝐰𝐧𝐞𝐫: 卡姆鲁尔
+┗━━━━━━━━━━━━━━━┛
+
+𝗕𝗼𝘁 𝗶𝘀 𝗮𝗹𝗶𝘃𝗲 𝗮𝗻𝗱 𝗿𝗲𝗮𝗱𝘆 𝘁𝗼 𝗿𝘂𝗹𝗲!
 `;
 
-      api.sendMessage(
-        {
-          body: systemInfo,
-        },
-        event.threadID,
-        (err, messageInfo) => {
-          if (err) {
-            console.error("Error sending message with attachment:", err);
-          } else {
-            console.log(
-              "Message with attachment sent successfully:",
-              messageInfo,
-            );
-          }
-        },
-      );
-    } catch (error) {
-      console.error("Error retrieving system information:", error);
-      api.sendMessage(
-        "Unable to retrieve system information.",
-        event.threadID,
-        event.messageID,
-      );
-    }
-  },
+      const attachment = await getImageStream();
+
+      const message = await api.sendMessage({
+        body: finalMessage,
+        attachment: attachment || undefined
+      }, event.threadID, event.messageID);
+
+      // React to the user's original message
+      if (message?.messageID) {
+        api.setMessageReaction("⏳", event.messageID, event.threadID, true);
+        api.setMessageReaction("✅", event.messageID, event.threadID, true);
+      }
+
+    } catch (error) {
+      console.error("Monitor error:", error);
+
+      // React with ⏳ and ❎ to user's message in case of error
+    api.setMessageReaction("⏳", event.messageID, event.threadID, true);
+      api.setMessageReaction("❎", event.messageID, event.threadID, true);
+
+      return api.sendMessage(`❌ 𝗘𝗿𝗿𝗼𝗿: ${error.response?.status === 429 ? '𝖳𝗈𝗈 𝗆𝖺𝗇𝗒 𝗋𝖾𝗊𝗎𝖾𝗌𝗍𝗌! 𝖳𝗋𝗒 𝖺𝗀𝖺𝗂𝗇 𝗌𝗁𝗈𝗋𝗧𝗅𝗒.' : error.message}`, event.threadID, event.messageID);
+    }
+  }
 };

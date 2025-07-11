@@ -3,102 +3,93 @@ const request = require("request");
 const os = require("os");
 
 module.exports = {
-  config: {
-    name: "info",
-    version: "1.3",
-    author: "✨ Eren Yeh ✨",
-    shortDescription: "Display bot and user information along with uptime and Imgur images/videos.",
-    longDescription: "Show detailed info about the bot and the user, with uptime and Imgur image/video features.",
-    category: "INFO",
-    guide: {
-      en: "[user]",
-    },
-  },
+  config: {
+    name: "info",
+    aliases: ["info"],
+    version: "1.4",
+    author: "Tom 🦆💨",
+    shortDescription: "Display bot and user information",
+    longDescription: "Shows user info, bot details, uptime, and video clips",
+    category: "INFO",
+    guide: { en: "Type 'info' or use prefix + info" },
+    usePrefix: false // to enable no-prefix
+  },
 
-  onStart: async function ({ api, event, args }) {
-    // Replace with your info
-    const userInfo = {
-      name: "卡姆鲁尔 (𝗧𝗼𝗺)",  // Replace with your name
-      age: "17+",           // Replace with your age
-      location: "Rangpur",    // Replace with your location
-      bio: "Bot & JavaScript Lover | Always Learning!", // Replace with your bio
-      botName: "BA'BY くめ", // Replace with bot's name
-      botVersion: "1.0",    // Replace with bot's version
-    };
+  onStart: async function (context) {
+    await module.exports.sendInfo(context); // works with prefix
+  },
 
-    // Calculate bot uptime
-    const botUptime = process.uptime(); // in seconds
-    const botHours = Math.floor(botUptime / 3600);
-    const botMinutes = Math.floor((botUptime % 3600) / 60);
-    const botSeconds = Math.floor(botUptime % 60);
-    const formattedBotUptime = `${botHours} hours, ${botMinutes} minutes, ${botSeconds} seconds`;
+  onChat: async function ({ api, event }) {
+    const body = (event.body || "").toLowerCase().trim();
+    const prefix = global.GoatBot.config.prefix;
+    const triggers = ["info", "cmdname", `${prefix}info`, `${prefix}cmdname`];
+    if (triggers.includes(body)) {
+      await module.exports.sendInfo({ api, event });
+    }
+  },
 
-    // Calculate system uptime in days, hours, minutes, and seconds
-    const systemUptime = os.uptime(); // in seconds
-    const sysDays = Math.floor(systemUptime / (3600 * 24)); // Convert seconds to days
-    const sysHours = Math.floor((systemUptime % (3600 * 24)) / 3600); // Remaining hours
-    const sysMinutes = Math.floor((systemUptime % 3600) / 60); // Remaining minutes
-    const sysSeconds = Math.floor(systemUptime % 60); // Remaining seconds
-    const formattedSystemUptime = `${sysDays} days, ${sysHours} hours, ${sysMinutes} minutes, ${sysSeconds} seconds`;
+  sendInfo: async function ({ api, event }) {
+    const userInfo = {
+      name: "卡姆鲁尔",
+      age: "17+",
+      location: "𝗥𝗮𝗻𝗴𝗽𝘂𝗿",
+      bio: "JavaScript Lover | Forever Curious",
+      botName: "『 𝗕𝗔'𝗕𝗬 くめ 』",
+      botVersion: "1.0"
+    };
 
-    // Example Imgur video links
-    const imgurLinks = [
-      "https://i.imgur.com/lzLYl1w.mp4",  // Replace with actual Imgur video links
-      "https://i.imgur.com/lzLYl1w.mp4",
-    ];
+    const formatTime = seconds => {
+      const d = Math.floor(seconds / (3600 * 24));
+      const h = Math.floor((seconds % (3600 * 24)) / 3600);
+      const m = Math.floor((seconds % 3600) / 60);
+      const s = Math.floor(seconds % 60);
+      return `${d}d ${h}h ${m}m ${s}s`;
+    };
 
-    // Download videos and send them as attachments
-    const downloadVideo = (url, filePath) => {
-      return new Promise((resolve, reject) => {
-        request(url)
-          .pipe(fs.createWriteStream(filePath))
-          .on("close", resolve)
-          .on("error", reject);
-      });
-    };
+    const msg = `
+╭━━〔 𝐀𝐝𝐦𝐢𝐧 𝐈𝐧𝐟𝐨 〕━━╮
+┣ ⏤👤 𝗡𝗮𝗺𝗲: ${userInfo.name}
+┣ ⏤🎂 𝗔𝗴𝗲: ${userInfo.age}
+┣ ⏤📍 𝗟𝗼𝗰𝗮𝘁𝗶𝗼𝗻: ${userInfo.location}
+┣ ⏤📝 𝗕𝗶𝗼: ${userInfo.bio}
+╰━━━━━━━━━━━━━━╯
 
-    // Construct the body message with more space
-    const bodyMsg = `
-Information: 🥷
+╭━━〔 𝗕𝗼𝘁 𝗜𝗻𝗳𝗼 〕━━╮
+┣ ⏤🤖 𝗡𝗮𝗺𝗲: ${userInfo.botName}
+┣ ⏤🛠 𝗩𝗲𝗿𝘀𝗶𝗼𝗻: ${userInfo.botVersion}
+┣ ⏤⏱ 𝗕𝗼𝘁 𝗨𝗽𝘁𝗶𝗺𝗲: ${formatTime(process.uptime())}
+┣ ⏤🖥 𝗦𝘆𝘀 𝗨𝗽𝘁𝗶𝗺𝗲: ${formatTime(os.uptime())}
+╰━━━━━━━━━━━━━━╯`.trim();
 
-- Name: ${userInfo.name}
-- Age: ${userInfo.age}
-- Location: ${userInfo.location}
-- Bio: ${userInfo.bio}
+    const videoLinks = [
+      "https://res.cloudinary.com/mahiexe/video/upload/v1748510603/mahi/1748510602853-453438222.mp4",
+      "https://res.cloudinary.com/mahiexe/video/upload/v1748510603/mahi/1748510602853-453438222.mp4"
+    ];
 
-Bot Details:
+    try {
+      const attachments = await Promise.all(videoLinks.map(async (url, i) => {
+        const path = `${__dirname}/cache/info_video_${i}.mp4`;
+        await new Promise((resolve, reject) =>
+          request(url)
+            .pipe(fs.createWriteStream(path))
+            .on("finish", resolve)
+            .on("error", reject)
+        );
+        return fs.createReadStream(path);
+      }));
 
-- Bot Name: ${userInfo.botName}
-- Bot Version: ${userInfo.botVersion}
-- Bot Uptime: ${formattedBotUptime}
-
-System Uptime:
-
-- System Uptime: ${formattedSystemUptime}
-
-─────────────────────
-`;
-
-    // Prepare video attachments
-    const videoPaths = [];
-    for (let i = 0; i < imgurLinks.length; i++) {
-      const videoPath = __dirname + `/cache/video${i}.mp4`;
-      await downloadVideo(imgurLinks[i], videoPath);
-      videoPaths.push(videoPath);
-    }
-
-    // Send message with info and video attachments
-    api.sendMessage(
-      { 
-        body: bodyMsg, 
-        attachment: videoPaths.map(path => fs.createReadStream(path))
-      },
-      event.threadID,
-      () => {
-        // Clean up downloaded video files
-        videoPaths.forEach(path => fs.unlinkSync(path));
-      },
-      event.messageID
-    );
-  },
+      await api.sendMessage(
+        { body: msg, attachment: attachments },
+        event.threadID,
+        () => {
+          // Clean up cache files
+          attachments.forEach(a => a.path && fs.unlink(a.path, () => {}));
+        },
+        event.messageID
+      );
+    } catch (err) {
+      console.error("❌ Error loading video:", err);
+      api.sendMessage("⚠️ Failed to fetch info. Please try again later.", event.threadID);
+    }
+  }
 };
